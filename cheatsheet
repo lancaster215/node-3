@@ -1,0 +1,13 @@
+go to sqltabs folder and open the app `./sqltabs`
+go to node-3 directory and enter `npm run db:start`
+open a new terminal tab which resides on the same directory as node-3 the enter `nodemon index.js`
+go to sqltabs and at the top bar, write the URL for postgres i.e.:`postgres://postgres@localhost:5432/postgres`
+hit enter, then write `node3db` as password
+
+
+References:
+`https://github.com/jinolacson/git-demonstration/blob/master/connect-docker-postgres/connect-docker-postgres.gif`
+`http://postgresguide.com/utilities/psql.html`
+
+Tips:
+Rewrite the package.json. Replace the version of node-pg-migrate to ^3.23.3 by executing this command: `npm uninstall node-pg-migrate` then `npm install node-pg-migrate@3.23.3`

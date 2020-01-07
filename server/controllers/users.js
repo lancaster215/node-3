@@ -1,27 +1,63 @@
+const argon2 = require('argon2');
+const secret = require('../../secret.js');
+const jwt = require('jsonwebtoken');
+
 module.exports = {
     create: (req, res) => {
         const db = req.app.get('db')
         const { email, password } = req.body;
 
+        argon2
+            .hash(password)
+            .then(hash => {
+                return db.users.insert({
+                    email,
+                    password: hash,
+                },{
+                    fields: ['id', 'email', 'password']
+                });
+            })
+            .then(user => {
+                const token = jwt.sign({ userId: user.id }, secret)
+                res.status(201).json({ ...user,token })
+            })
+            .catch(err =>{
+                console.error(err)
+                res.status(500).end()
+            })
+    },
+    login: (req, res) => {
+        const db = req.app.get('db');
+        const { email, password } = req.body;
+
         db.users
-        .insert({
-            email,
-            password,
-            user_profiles: [
-                {
-                    userId: undefined,
-                    about: null,
-                    thumbnail: null,
-                },
-            ],
-        },{
-            deepInsert: true    
-        })
-        .then(user => res.status(201).json(user))
-        .catch(err =>{
-            console.error(err)
-            res.status(500).end()
-        })
+            .findOne({
+                email,
+            },{
+                fields: ['id', 'email', 'password'],
+            })
+            .then(user => {
+                if(!user){
+                    throw new Error('Invalid email')
+                }
+                return argon2.verify(user.password, password).then(valid =>{
+                    if(!valid){
+                        throw new Error('Incorrect password')
+                    }
+
+                    const token = jwt.sign({ userId: user.id }, secret)
+                    delete user.password;
+                    res.status(200).json({ ...user, token })
+                })
+            })
+            .catch(err =>{
+                if(['Invalid username', 'Incorrect password'].includes(err.message)){
+                    res.status(400).json({ error: err.message})
+                }else{
+                    console.log(err)
+                    res.status(500).end()
+                }
+            })
     },
     list: (req, res) =>{
         const db = req.app.get('db');
