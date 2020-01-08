@@ -6,6 +6,7 @@ module.exports = {
     create: (req, res) => {
         const db = req.app.get('db')
         const { email, password } = req.body;
+        const { about, thumbnail } = req.body;
 
         argon2
             .hash(password)
@@ -13,8 +14,17 @@ module.exports = {
                 return db.users.insert({
                     email,
                     password: hash,
+                    user_profiles: [
+                        {
+                            userId: undefined,
+                            about,
+                            thumbnail,
+                        },
+                    ],
                 },{
-                    fields: ['id', 'email', 'password']
+                    deepInsert: true,
+                },{
+                    fields: ['id', 'email', 'password', 'about', 'thumbnail']
                 });
             })
             .then(user => {
@@ -46,7 +56,7 @@ module.exports = {
                     }
 
                     const token = jwt.sign({ userId: user.id }, secret)
-                    delete user.password;
+                    // delete user.password;
                     res.status(200).json({ ...user, token })
                 })
             })
@@ -83,7 +93,7 @@ module.exports = {
     },
     getProfile: (req, res) => {
         const db = req.app.get('db');
-
+ 
         db.user_profiles
         .findOne({userId: req.params.id})
         .then(u => res.status(200).json(u))
@@ -162,6 +172,28 @@ module.exports = {
         })
         .then(u => res.status(200).json(u))
         .catch(err => {
+            console.err(err)
+            res.status(500).end()
+        })
+    },
+    getComments: (req, res) => {
+        const db = req.app.get('db')
+
+        db.comments
+        .find()
+        .then(u => res.status(200).json(u))
+        .catch(err => {
+            console.err(err)
+            res.status(500).end()
+        })
+    },
+    getCommId: (req, res) => {
+        const db = req.app.get('db')
+
+        db.comments
+        .find(req.params.postId)
+        .then(u => res.status(200).json(u))
+        .catch(err=>{
             console.err(err)
             res.status(500).end()
         })
